@@ -64,7 +64,7 @@ def y_lat(y):
 
 
 class SuperCluster:
-    def __init__(self, options):
+    def __init__(self, options = DEFAULT_OPTIONS):
         self.options = {**DEFAULT_OPTIONS, **options}
         # self.trees = np.empty((self.options["max_zoom"] + 2, 5))
         self.trees = list([None] * (self.options["max_zoom"] + 2))

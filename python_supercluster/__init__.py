@@ -1,3 +1,3 @@
-from supercluster import Supercluster
+from .supercluster import SuperCluster
 
-__all__ = ['Supercluster']
+__all__ = ['SuperCluster']
