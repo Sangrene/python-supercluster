@@ -1,5 +1,5 @@
 # Python SuperCluster
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/python-supercluster)
+![PyPI - Version](https://img.shields.io/pypi/v/python-supercluster)
 ![Test workflow status](https://github.com/Sangrene/python-supercluster/actions/workflows/tests.yaml/badge.svg)
 
 This library aims to provide the geospatial clustering features of mapbox supercluster while using Python and optimised numpy under the hood for good performances.
