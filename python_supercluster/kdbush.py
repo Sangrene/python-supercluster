@@ -19,6 +19,8 @@
 from typing import Callable, List
 
 import numpy as np
+from numba import njit, types
+from numba.typed import List as TypedList
 
 
 # based on:
@@ -58,7 +60,7 @@ class KDBush:
         max_x: int,
         max_y: int,
     ):
-        return _range(self.ids, self.coords, min_x, min_y, max_x, max_y, self.node_size)
+        return list(_range(self.ids, self.coords, min_x, min_y, max_x, max_y, self.node_size))
 
     def within(
         self,
@@ -66,12 +68,13 @@ class KDBush:
         y: int,
         r: int,
     ):
-        return _within(self.ids, self.coords, x, y, r, self.node_size)
+        return list(_within(self.ids, self.coords, x, y, r, self.node_size))
 
 
 # sort =========================================================================
 # based on:
 # https://github.com/mourner/kdbush/blob/ea3a81d272e1a87df3efe8c404021435dfa6cbfd/src/sort.js#L2
+@njit(cache=True)
 def _sort(
     ids: np.ndarray,  # udpated in place
     coords: np.ndarray,  # udpated in place
@@ -93,6 +96,7 @@ def _sort(
 
 # based on:
 # https://github.com/mourner/kdbush/blob/ea3a81d272e1a87df3efe8c404021435dfa6cbfd/src/sort.js#L18
+@njit(cache=True)
 def _select(
     ids: np.ndarray,  # updated in place
     coords: np.ndarray,  # updated in place
@@ -101,22 +105,22 @@ def _select(
     right,
     axis: int,
 ) -> None:
+    left = np.int64(left)
+    right = np.int64(right)
     while right > left:
-        right = np.uint32(right)
-        left = np.uint32(left)
         if right - left > 600:
             n = right - left + 1
             m = k - left + 1
             z = np.log(n)
             s = 0.5 * np.exp(2 * z / 3)
-            sd = 0.5 * np.sqrt(z * s * (n - s) / n) * (m - n / -1 if 2 < 0 else 1)
-            new_left = max(left, np.floor(k - m * s / n + sd))
-            new_right = min(right, np.floor(k + (m - n) * s / n + sd))
+            sd = 0.5 * np.sqrt(z * s * (n - s) / n)
+            new_left = max(left, np.int64(np.floor(k - m * s / n + sd)))
+            new_right = min(right, np.int64(np.floor(k + (m - n) * s / n + sd)))
             _select(ids, coords, k, new_left, new_right, axis)
 
         t = coords[2 * k + axis]
-        i = np.uint32(left)
-        j = np.uint32(right)
+        i = left
+        j = right
 
         _swap_item(ids, coords, left, k)
         if coords[2 * right + axis] > t:
@@ -145,6 +149,7 @@ def _select(
 
 # based on
 # https://github.com/mourner/kdbush/blob/ea3a81d272e1a87df3efe8c404021435dfa6cbfd/src/sort.js#L58
+@njit(cache=True)
 def _swap_item(
     ids: np.ndarray,  # updated in place
     coords: np.ndarray,  # updated in place
@@ -158,6 +163,7 @@ def _swap_item(
 
 # based on:
 # https://github.com/mourner/kdbush/blob/ea3a81d272e1a87df3efe8c404021435dfa6cbfd/src/sort.js#L64
+@njit(cache=True)
 def _swap(
     arr: np.ndarray,
     i: int,
@@ -175,6 +181,7 @@ def _swap(
 
 # based on:
 # https://github.com/mourner/kdbush/blob/ea3a81d272e1a87df3efe8c404021435dfa6cbfd/src/range.js#L2
+@njit(cache=True)
 def _range(
     ids: np.ndarray,
     coords: np.ndarray,
@@ -184,8 +191,11 @@ def _range(
     max_y: int,
     node_size: int,
 ) -> List[int]:
-    stack = [0, len(ids) - 1, 0]
-    result = []
+    stack = TypedList.empty_list(types.int64)
+    stack.append(0)
+    stack.append(len(ids) - 1)
+    stack.append(0)
+    result = TypedList.empty_list(types.uint32)
 
     # recursively search for items in range in the kd-sorted arrays
     while len(stack):
@@ -233,6 +243,7 @@ def _range(
 
 # based on:
 # https://github.com/mourner/kdbush/blob/ea3a81d272e1a87df3efe8c404021435dfa6cbfd/src/within.js#L2
+@njit(cache=True)
 def _within(
     ids: np.ndarray,
     coords: np.ndarray,
@@ -241,8 +252,11 @@ def _within(
     r: int,
     node_size: int,
 ) -> List[int]:
-    stack = [0, len(ids) - 1, 0]
-    result = []
+    stack = TypedList.empty_list(types.int64)
+    stack.append(0)
+    stack.append(len(ids) - 1)
+    stack.append(0)
+    result = TypedList.empty_list(types.uint32)
     r2 = r * r
 
     # recusively search for items within the radius in the kd-sorted arrays
@@ -279,6 +293,7 @@ def _within(
     return result
 
 
+@njit(cache=True)
 def __sq_dist(ax: float, ay: float, bx: float, by: float) -> float:
     return (ax - bx) ** 2 + (ay - by) ** 2
 

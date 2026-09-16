@@ -8,6 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 numpy = "^2.2.1"
+numba = ">=0.61,<0.62"
 
 
 [tool.poetry.group.dev.dependencies]
